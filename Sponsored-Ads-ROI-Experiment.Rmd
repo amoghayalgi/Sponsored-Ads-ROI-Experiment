@@ -1,0 +1,121 @@
+---
+title: "Measuring ROI on Bazaar's Sponsored Search Ads"
+author: "Rachel Le (#5726383) & Amogha Yalgi (#5992072)"
+date: "`r Sys.Date()`"
+output:
+  html_document: default
+  pdf_document: default
+---
+## Business Goal
+Bazaar is a top online retailer in the US that utilize display and search engine ads to drive click conversion. Search engine online advertising, specifically through Google and Bing, includes branded search (consumers’ search including the term ‘Bazaar’) and non-branded search. Bob - member of the Marketing Analytics team - reported a 320% ROI through Google branded search ads. We examine whether this ROI measure calculation is valid and provide further recommendations. 
+
+## Key Insights & Recommendations
+- Bob's ROI metrics is defective: ROI is supposed to measure the incremental conversions resulting from prompted ads rather than organic consumer behaviors. We corrected this by adding incremental lift factor from difference-in-differences estimate in the refined ROI formula.
+- There is no data provided for non-branded search. We recommend the team to look into it and evaluate this yields higher ROI. If positive, the team should switch to investing on non-branded search ads.
+
+## Cautions
+⁠Although Google and the control platforms follow broadly similar patterns before week 10, the control group shows a stronger upward trend even in the pre‑treatment period. This imperfect alignment means the parallel trends assumption may not fully hold, so the DiD estimate should be interpreted with caution. Some of the post‑treatment difference may reflect pre‑existing trend divergence rather than the treatment effect alone.
+
+## Data summary
+```{r message=FALSE, warning=FALSE, paged.print=FALSE}
+library(dplyr)
+library(ggplot2)
+```
+
+```{r}
+bazaar <- read.csv("did_sponsored_ads.csv")
+
+bazaar <- bazaar %>%
+  mutate(avg_total_clicks = avg_spons + avg_org,
+         treated = ifelse(platform == "goog", 1, 0),
+         post    = ifelse(week > 9, 1, 0))
+```
+
+```{r}
+bazaar %>%
+  group_by(treated, post) %>%
+  summarise(avg = mean(avg_total_clicks))
+```
+
+```{r}
+hist(bazaar$avg_total_clicks)
+``` 
+  
+We attempted a log transformation of avg_total_clicks, but it seems to over correct the skew and turn it into left-skewed distribution. We therefore decided to stick with original values.
+
+## First Difference
+Consider experiment setup, our unit of observation here is a week capturing average total clicks (sponsored + organic) on Google. The pre-period spans 9 weeks before technical glitch, and the post-period considers clicks between weeks 10 and 12. We ran a simple regression to evaluate how estimated treatment effect is impacted with post as the sole predictor. 
+```{r}
+# first-difference: the % change in web traffic arriving from Google; (after – before) / before
+before_mean <- mean(bazaar$avg_total_clicks[bazaar$platform == "goog" & bazaar$post == 0])
+google_data <- bazaar %>% filter(platform == "goog")
+
+first_diff <- lm(avg_total_clicks ~ post, data = google_data)
+summary(first_diff)
+```
+```{r}
+post_effect <- coef(first_diff)['post'] / before_mean
+post_effect
+```
+
+Results show that the click rates in the post period decreased by 22% compared to pre period (p-val = 0.576). However, this is only a before-after comparison, not a causal estimate, because it attributes all change in the treated group to the treatment. Any unrelated time effects, such as seasonality or changes in Google traffic overall, would also be included in this number. For that reason, we need a control group or a difference-in-differences approach to isolate the treatment effect more credibly. p-val > 0.05, the effect discussed is not statistically significant, limiting our confidence in the magnitude of the estimates.
+
+## Difference in Differences
+Our unit of observations is a search engine–week cell: for each platform (Yahoo, Bing, Google, Ask) and each week (1–12), we observe average sponsored and organic traffic. The treatment group is Google. It ran sponsored ads in Weeks 1–9 (pre-treatment period) and had its sponsored campaign go dark in Weeks 10–12 (post-treatment period). The control group is the three other platforms that don’t have any interruption during the 12-week experiment. We will compare the change pre and post period of Google against the control group to evaluate the effectiveness of sponsored ads, while excluding confounding factors like week-to-week variation and seasonal trends. 
+
+```{r}
+#difference-in-differences
+did <- lm(avg_total_clicks ~ treated + post + treated:post, data = bazaar)
+summary(did)
+```
+
+```{r}
+coef(did)['treated:post']  / before_mean
+```
+treated:post is statistically significant, confirming there's treatment effect. Removing Google's sponsored ads lead to a significant drop in traffic (118% decrease compared to pre-period baseline, accounting for trend observed from control platforms). However, the extreme magnitude of the effect might indicate that the platforms might not be a comparable benchmark for Google.
+
+# Parallel Trends Assumption 
+```{r}
+week_avg <- bazaar %>%
+  group_by(week, treated) %>%
+  summarise(avg = mean(avg_total_clicks))
+
+ggplot(week_avg, aes(x = week, y = avg, color = factor(treated))) +
+  geom_line() +
+  geom_vline(xintercept = 9, linetype = "dotted") +
+  theme_bw()
+```
+
+The parallel trends plot shows Google and the control platforms trending similarly in weeks 1–9, but diverging sharply after week 9, which is consistent with the treatment effect. However, the control group's steep upward trend compared to Google's flat/declining trend raises concerns about whether the parallel trends assumption fully holds.  
+
+## Fixed ROI calculation
+The current search ad engine ROI formula is calculated as:
+$$
+\text{ROI} = \frac{P(\text{Consumers make a purchase} \mid \text{landing on page}) \times \text{Avg. Margin per conversion} - \text{CPC}}{\text{CPC}} = \frac{0.12 \times \$21 - \$0.60}{\$0.60} = 320\%
+$$
+We identified three flaws in BOB's ROI metric:  
+
+- First of all, Bob uses the probability that consumers purchase once they land on the page, but clicks don't always result in a page impression. There can be traffic loss between the two events page through ads click. Instead, we should think about the probability of consumers making a purchase through click
+
+- He also used average margin per conversion, and we need to look more closely into it to make sure if this value is skewed towards an extremely large value set of items or not
+
+- Most critically, we are calculating the ROI using branded search, i.e., consumers include ‘Bazaar’ and be prompted with the sponsored ad. We agree with Myra that this is not a strong reflection of how effective the campaign is: consumers who already target search towards the brand could potentially convert organically without the needs of sponsored ad. ROI should capture the incremental conversions resulting from prompted ads instead of organic behavior  
+
+Due to data limitations, we address only the third issue in the revised ROI formula. Using the information provided, we have treatment effect of 9910.6 clicks decreased after treatment. With CPC is \$0.6, average number of sponsored ads is 6123 ads on Google over the first 9 weeks, and a 12% conversion rate, refined ROI formula is calculated as:  
+```{r}
+CPC = 0.6
+avg_num_of_spons_ad <- mean(bazaar[bazaar$platform == 'goog' & bazaar$week <= 9, ]$avg_spons, na.rm = TRUE)
+avg_num_of_spons_ad
+weekly_cpc = CPC * avg_num_of_spons_ad
+weekly_cpc
+avg_margin_per_purchase <- 21
+lift <- 9910.6
+treated_rev <- lift * avg_margin_per_purchase
+roi <- (treated_rev * .12  - weekly_cpc)  / weekly_cpc
+roi
+```
+
+$$
+\text{refined ROI} = \frac{(\text{Click Lift} \times \text{Avg Margin} \times \text{Conversion Rate}) - \text{Weekly CPC}}{\text{Weekly CPC}} = \frac{(9910.6 \times 21 \times .12) - 3673}{3673} = 579.8\%
+$$
+The corrected ROI exceeds Bob's original estimate of 320%, suggesting the branded search campaign is even more valuable when incremental conversions are properly isolated. However, since we only addressed the third flaw, we recommend revisiting the remaining two issues - refining the click-to-purchase probability and validating the average margin per conversion - before adopting this as the final ROI formula.
