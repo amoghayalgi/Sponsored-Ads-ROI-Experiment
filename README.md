@@ -1,12 +1,16 @@
 # 📈 Search Ads ROI Experiment
 
 ## 📘 Overview
-This project examines the effectiveness of sponsored search ads and assesses whether the reported ROI reflects true incremental value. The analysis uses an experimental framework to compare treated and control groups and improve the reliability of the ROI estimate.
+This project examines the effectiveness of running sponsored search ads on web browsers and assesses whether the reported ROI reflects true incremental value. The analysis is based on the Columbia Business School case about [RoI on sponsored search at Bazaar.com](https://caseworks.business.columbia.edu/caseworks/measuring-roi-sponsored-search-ads) and uses an experimental framework to compare treated and control groups to improve the reliability of the ROI estimate.
+
+Treated unit: Google is the treated unit. It ran sponsored ads in Weeks 1–9 (pre-treatment period) and had its sponsored campaign go dark in Weeks 10–12 (post-treatment period).
+
+Control unit: Yahoo, Bing, and Ask, which continue running sponsored ads throughout weeks 1–12.
 
 ---
 
 ## 🔑 Key Insights
-- The original ROI estimate was based on a limited view of ad performance.
+- The original ROI estimate of 320% was based on a limited view of ad performance.
 - The refined approach focuses on incremental lift from the experiment.
 - It uses a difference-in-differences (DiD) framework to better isolate the effect of the sponsored ads.
 
