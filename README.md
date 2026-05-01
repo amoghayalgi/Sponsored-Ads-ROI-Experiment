@@ -33,9 +33,7 @@ The analysis shows that sponsored search ads appear to generate meaningful incre
 
 ## 🗂 Repository Structure
 ```bash
-├── data/
-│   └── did_sponsored_ads.csv
-├── notebooks/
-│   └── Search_Ads_ROI_Experiment.Rmd
+├── did_sponsored_ads.csv #data
+├── Search_Ads_ROI_Experiment.Rmd #code with detailed analysis
 └── README.md
 ```
