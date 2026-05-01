@@ -1,7 +1,7 @@
 # 📈 Search Ads ROI Experiment
 
 ## 📘 Overview
-This project examines the effectiveness of running sponsored search ads on web browsers and assesses whether the reported ROI reflects true incremental value. The analysis is based on the Columbia Business School case about [RoI on sponsored search at Bazaar.com](https://caseworks.business.columbia.edu/caseworks/measuring-roi-sponsored-search-ads) and uses an experimental framework to compare treated and control groups to improve the reliability of the ROI estimate.
+This project examines the effectiveness of running sponsored search ads on web browsers and assesses whether the reported ROI reflects true incremental value. The analysis is based on the Columbia Business School case about [RoI on sponsored search at Bazaar.com](https://caseworks.business.columbia.edu/caseworks/measuring-roi-sponsored-search-ads) and uses an experimental framework to compare treated and control groups improve the reliability of the ROI estimate.
 
 Treated unit: Google is the treated unit. It ran sponsored ads in Weeks 1–9 (pre-treatment period) and had its sponsored campaign go dark in Weeks 10–12 (post-treatment period).
 
