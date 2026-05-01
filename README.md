@@ -9,10 +9,9 @@ Control unit: Yahoo, Bing, and Ask, which continue running sponsored ads through
 
 ---
 
-## 🔑 Key Insights
+## 🔑 Key Highlights
 - The original ROI estimate of 320% was based on a limited view of ad performance.
-- The refined approach focuses on incremental lift from the experiment.
-- It uses a difference-in-differences (DiD) framework to better isolate the effect of the sponsored ads.
+- The refined approach uses a difference-in-differences (DiD) framework to better isolate the effect of the sponsored ads.
 
 
 ---
